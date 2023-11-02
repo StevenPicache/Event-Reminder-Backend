@@ -1,7 +1,6 @@
 import { Sequelize } from "sequelize"
 import { config } from './config'
 
-
 const sequelize = new Sequelize(
     config.database,
     config.user,
@@ -21,10 +20,9 @@ async function testConnection(){
     }
 }
 
-
 async function testSyncTable(){
     try {
-        await sequelize.sync({force: true})
+        await sequelize.sync({alter: true})
         console.log("Models synced/altered successfully")
     } catch (e) {
         console.log(e)

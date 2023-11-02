@@ -1,9 +1,10 @@
 services:
-  jia-event-scheduler-node:
+  event-reminder-node:
+    container_name: event-reminder
     image: postgres:14
     ports:
       - "5432:5432"
     environment:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_USER=postgres
-      - POSTGRES_DB=jiaevents
+      - POSTGRES_DB=events

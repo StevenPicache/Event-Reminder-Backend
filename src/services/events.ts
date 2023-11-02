@@ -1,48 +1,58 @@
 import { Event } from "../models/events"
+import { fn, col, Op } from "sequelize";
+import { AddEvent, Events } from "../types/events";
+import moment from "moment";
 
 
-
-
-interface Events {
-    eventId: number,
-    userId: string,
-    eventType: string,
+enum EventSchema  {
+    firstName = "firstName",
+    lastName = "lastName",
+    eventType = "eventType",
+    eventDate = "eventDate",
 }
 
-export interface EventData {
-    userId?: number,
-    eventType: String
-    eventDate: Date,
+type ErrorResponse = {
+    code: number
+    message: string
 }
 
 export const EventServices = {
-    /**
-     * Document service
-     * @param req 
-     * @param res 
-     */
-    async getEventsService(): Promise<Events[]> {
-        try {
-            const output: Events[] = []
-            const res = await Event.findAll()
-            console.log(typeof res)
-            console.log(res.map((data) => console.log(data)))
-            res.map((data) => output.push(data.toJSON()))
-            return output
-        }
-        catch (error) {
-            throw new Error(`Error fetching data, ${error}`)
-        }
+
+    async getEvents(): Promise<Events[]> {
+        const output: Events[] = []
+        const dateFormat: string = 'YYYY-MM-DD'
+        const startDate = new Date(moment().format(dateFormat)); 
+        const endDate = new Date(moment().add(2, 'week').format(dateFormat)); 
+
+        const res = await Event.findAll({
+            attributes: [
+                [fn('concat', col(EventSchema.firstName), ' ', col(EventSchema.lastName)), "name"],
+                EventSchema.eventType,
+                EventSchema.eventDate,
+            ],
+              
+            where: {
+                "eventDate": {
+                    [Op.between]: [startDate, endDate], 
+                }
+            },
+            order: [[EventSchema.eventDate, 'ASC']],
+        });
+
+        res.map((data) => output.push(data.toJSON()))
+        return output
     },
 
-    async insertEvent(event: EventData): Promise<any> {
-        try {
-            const { userId, eventType, eventDate} = event
-            const res = await Event.create({ userId, eventType, eventDate})
-            console.log(res)
-            return res
-        } catch (e) {
-            throw new Error(`Something went wrong${e}`)
+    async addEvent(event: AddEvent): Promise<AddEvent | ErrorResponse> {
+        const { firstName, lastName, eventType, eventDate } = event
+        if (firstName && lastName && eventDate) {
+            const res = await Event.create({ firstName, lastName, eventType, eventDate })
+            return res.toJSON()
+        } else {
+            return {
+                code: 400,
+                message: "A required field is missing"
+            } as ErrorResponse
         }
     },
 }

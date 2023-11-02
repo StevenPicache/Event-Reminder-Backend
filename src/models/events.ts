@@ -1,6 +1,5 @@
 import { DataTypes } from "sequelize"
 import sequelize from "../config/sequelize";
-import { User } from "./users";
 
 const tableName = 'Event'
 export const Event = sequelize.define(tableName, {
@@ -9,18 +8,18 @@ export const Event = sequelize.define(tableName, {
         autoIncrement: true,
         type: DataTypes.INTEGER,
     },
-    userId: {
-        type: DataTypes.INTEGER
+    firstName: {
+        type: DataTypes.STRING
+    },
+    lastName: {
+        type: DataTypes.STRING
     },
     eventType: {
-        allowNull: false,
         type: DataTypes.STRING
     },
     eventDate: {
-        type: DataTypes.DATEONLY
+        type: DataTypes.DATE
     }
 }, {
     freezeTableName: true
 })
-
-Event.belongsTo(User, {foreignKey: 'userId'})
