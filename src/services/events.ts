@@ -16,8 +16,11 @@ type ErrorResponse = {
     message: string
 }
 
-export const EventServices = {
+export type SearchText = {
+    searchText: string
+}
 
+export const EventServices = {
     async getEvents(): Promise<Events[]> {
         const output: Events[] = []
         const dateFormat: string = 'YYYY-MM-DD'
@@ -54,5 +57,60 @@ export const EventServices = {
                 message: "A required field is missing"
             } as ErrorResponse
         }
+    },
+
+   
+    async searchEvents({searchText} : SearchText): Promise<Events[]> {
+        const output: Events[] = []
+        if (searchText.length === 0 ) return output
+        
+        const res = await Event.findAll({
+            attributes: [
+                [fn('concat', col(EventSchema.firstName), ' ', col(EventSchema.lastName)), "name"],
+                EventSchema.eventType,
+                EventSchema.eventDate,
+            ],
+       
+            where: {
+                [Op.or]: [
+                    {
+                        "firstName": {
+                            [Op.iLike]: `${searchText}%`
+                        }
+                    },
+                    {
+                        "firstName": {
+                           [Op.iLike]: `%${searchText}%`
+                        }
+                    },
+                    {
+                        "lastName": {
+                            [Op.iLike]: `${searchText}%`
+                        }
+                    },
+                    {
+                        "lastName": {
+                            [Op.iLike]: `%${searchText}%`
+                        }
+                    },
+                    {
+                        "eventType": {
+                            [Op.iLike]: `${searchText}%`
+                        }
+                    },
+                    {
+                        "eventType": {
+                            [Op.iLike]: `%${searchText}%`
+                        }
+                    },
+                ]
+            },
+        
+            order: [[EventSchema.eventDate, 'ASC']],
+            })
+
+            res.map((data) => output.push(data.toJSON()))
+
+        return output
     },
 }
