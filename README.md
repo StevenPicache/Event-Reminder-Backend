@@ -1,15 +1,69 @@
+
 # Event-Reminder-Backend
 
-Stacks:
-1. Node
-2. TypeScript
-3. Docker
-4. PosgreSQL
-5. Sequelize
+A small project to showcase my knowledge and skillsets
+
+## Tech Stack
+
+**Server:** 
+Node, 
+TypeScript, 
+Express, 
+PostgreSQL, 
+Docker 
 
 
-Running:
-1. npm install
-2. docker compose create
-3. docker compose start
-4. npm run start
+
+## Setup & Running
+
+
+```bash
+  cd Event-Reminder-Backend
+  npm install 
+  docker compose create
+  docker compose start
+  npm run start
+```
+    
+## API Reference
+
+#### Get all events
+
+```http
+  GET /v0/events
+```
+
+#### Get events by first name, last name, and event type
+
+```http
+  GET /v0/events/:param
+```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `searchText`      | `string` | finds all data that matches the text. |
+
+
+```http
+  POST /v0/events/
+```
+
+| Parameter | Type     | Description                       |
+| :-------- | :------- | :-------------------------------- |
+| `firstName`      | `string` | first name of the person |
+| `lastName`      | `string` | last name of the person |
+| `eventType`      | `string` | type of event |
+| `eventDate`      | `string` | date of the event |
+
+
+
+
+
+## Stacks
+
+[Node](https://nodejs.org/en)
+[TypeScript](https://www.typescriptlang.org/)
+[Express](https://expressjs.com/)
+[PostgreSQL](https://www.postgresql.org/)
+[Docker](https://www.docker.com/)
+
