@@ -53,7 +53,7 @@ Docker
 | `firstName`      | `string` | first name of the person |
 | `lastName`      | `string` | last name of the person |
 | `eventType`      | `string` | type of event |
-| `eventDate`      | `string` | date of the event |
+| `eventDate`      | `Date` | date of the event |
 
 
 
