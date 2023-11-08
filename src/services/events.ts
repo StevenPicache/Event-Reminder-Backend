@@ -35,7 +35,7 @@ export const EventServices = {
             ],
               
             where: {
-                "eventDate": {
+                [EventSchema.eventDate]: {
                     [Op.between]: [startDate, endDate], 
                 }
             },
@@ -64,52 +64,59 @@ export const EventServices = {
         const output: Events[] = []
         if (searchText.length === 0 ) return output
         
+
+        /// Finds all records that matches with `searchText`. Name or event
         const res = await Event.findAll({
             attributes: [
                 [fn('concat', col(EventSchema.firstName), ' ', col(EventSchema.lastName)), "name"],
                 EventSchema.eventType,
                 EventSchema.eventDate,
             ],
-       
+          
             where: {
                 [Op.or]: [
                     {
-                        "firstName": {
-                            [Op.iLike]: `${searchText}%`
-                        }
+                        [EventSchema.firstName]: {
+                            [Op.or]: [
+                                {
+                                    [Op.iLike]: `${searchText}%`
+                                },
+                                {
+                                    [Op.iLike]: `%${searchText}%`
+                                }
+                            ]
+                        },
                     },
                     {
-                        "firstName": {
-                           [Op.iLike]: `%${searchText}%`
-                        }
+                        [EventSchema.lastName]: {
+                            [Op.or]: [
+                                {
+                                    [Op.iLike]: `${searchText}%`
+                                },
+                                {
+                                    [Op.iLike]: `%${searchText}%`
+                                }
+                            ]
+                        },
                     },
                     {
-                        "lastName": {
-                            [Op.iLike]: `${searchText}%`
-                        }
-                    },
-                    {
-                        "lastName": {
-                            [Op.iLike]: `%${searchText}%`
-                        }
-                    },
-                    {
-                        "eventType": {
-                            [Op.iLike]: `${searchText}%`
-                        }
-                    },
-                    {
-                        "eventType": {
-                            [Op.iLike]: `%${searchText}%`
-                        }
-                    },
+                        [EventSchema.eventType]: {
+                            [Op.or]: [
+                                {
+                                    [Op.iLike]: `${searchText}%`
+                                },
+                                {
+                                    [Op.iLike]: `%${searchText}%`
+                                }
+                            ]
+                        },
+                    }
                 ]
             },
-        
             order: [[EventSchema.eventDate, 'ASC']],
-            })
+        })
 
-            res.map((data) => output.push(data.toJSON()))
+        res.map((data) => output.push(data.toJSON()))
 
         return output
     },
