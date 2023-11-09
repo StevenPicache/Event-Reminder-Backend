@@ -1,7 +1,7 @@
 
 # Event-Reminder-Backend
 
-A small project to showcase my knowledge and skillsets
+The purpose of this project is to show understanding of Node, Express, Docker, and Sequelize
 
 ## Tech Stack
 
