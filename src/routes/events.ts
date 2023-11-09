@@ -4,10 +4,6 @@ import { EventServices, SearchText } from '../services/events';
 const router = express.Router()
 
 
-
-/**
-* Queries all the events within the next 2 weeks and return them in ASC order
-*/
 const getEvents = async (req: Request, res: Response) => {
     try {
         const result = await EventServices.getEvents()
@@ -18,7 +14,6 @@ const getEvents = async (req: Request, res: Response) => {
         res.status(500).send(e.toString())
     }
 }
-
 
 const addEvent = async (req: Request, res: Response) => {
     try {
