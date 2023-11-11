@@ -1,6 +1,8 @@
 
 # Event-Reminder-Backend
+# Status - Work-in-progress
 
+## Purpose
 The purpose of this project is to show understanding of Node, Express, Docker, and Sequelize
 
 ## Tech Stack
