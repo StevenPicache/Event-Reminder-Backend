@@ -1,18 +1,19 @@
 import { Event } from '../models/events'
 import { fn, col, Op } from 'sequelize'
-import { AddEvent, Events } from '../types/events'
 import moment from 'moment'
 
-enum EventSchema {
-    firstName = 'firstName',
-    lastName = 'lastName',
-    eventType = 'eventType',
-    eventDate = 'eventDate',
-}
+// export type Events = {
+//     id: number
+//     name: string
+//     eventType: string
+//     eventDate: Date
+// }
 
-type ErrorResponse = {
-    code: number
-    message: string
+export type AddEvent = {
+    firstName: string
+    lastName: string
+    eventType: string
+    eventDate: Date
 }
 
 export type SearchText = {
@@ -21,6 +22,27 @@ export type SearchText = {
 
 export type WeekRange = {
     range: number
+}
+
+enum EventSchema {
+    eventId = 'eventId',
+    firstName = 'firstName',
+    lastName = 'lastName',
+    eventType = 'eventType',
+    eventDate = 'eventDate',
+}
+
+type QueryResponse = {
+    code: number
+    message: string
+}
+
+type Events = {
+    eventId?: number
+    firstName: string
+    lastName: string
+    eventType: string
+    eventDate: Date
 }
 
 export const EventServices = {
@@ -32,15 +54,9 @@ export const EventServices = {
 
         const res = await Event.findAll({
             attributes: [
-                [
-                    fn(
-                        'concat',
-                        col(EventSchema.firstName),
-                        ' ',
-                        col(EventSchema.lastName),
-                    ),
-                    'name',
-                ],
+                EventSchema.eventId,
+                EventSchema.firstName,
+                EventSchema.lastName,
                 EventSchema.eventType,
                 EventSchema.eventDate,
             ],
@@ -59,7 +75,7 @@ export const EventServices = {
 
     async getEventsWeekRange(
         props: WeekRange,
-    ): Promise<Events[] | ErrorResponse> {
+    ): Promise<Events[] | QueryResponse> {
         const { range } = props
         const defaultRange = 2
         const output: Events[] = []
@@ -74,15 +90,9 @@ export const EventServices = {
         if (range !== null) {
             const res = await Event.findAll({
                 attributes: [
-                    [
-                        fn(
-                            'concat',
-                            col(EventSchema.firstName),
-                            ' ',
-                            col(EventSchema.lastName),
-                        ),
-                        'name',
-                    ],
+                    EventSchema.eventId,
+                    EventSchema.firstName,
+                    EventSchema.lastName,
                     EventSchema.eventType,
                     EventSchema.eventDate,
                 ],
@@ -99,27 +109,9 @@ export const EventServices = {
             return {
                 code: 400,
                 message: 'A required field is missing',
-            } as ErrorResponse
+            } as QueryResponse
         }
         return output
-    },
-
-    async addEvent(event: AddEvent): Promise<AddEvent | ErrorResponse> {
-        const { firstName, lastName, eventType, eventDate } = event
-        if (firstName && lastName && eventType && eventDate) {
-            const res = await Event.create({
-                firstName,
-                lastName,
-                eventType,
-                eventDate,
-            })
-            return res.toJSON()
-        } else {
-            return {
-                code: 400,
-                message: 'A required field is missing',
-            } as ErrorResponse
-        }
     },
 
     async searchEvents(props: SearchText): Promise<Events[]> {
@@ -129,15 +121,9 @@ export const EventServices = {
         /// Finds all records that matches with `searchText`. Name or event
         const res = await Event.findAll({
             attributes: [
-                [
-                    fn(
-                        'concat',
-                        col(EventSchema.firstName),
-                        ' ',
-                        col(EventSchema.lastName),
-                    ),
-                    'name',
-                ],
+                EventSchema.eventId,
+                EventSchema.firstName,
+                EventSchema.lastName,
                 EventSchema.eventType,
                 EventSchema.eventDate,
             ],
@@ -146,6 +132,18 @@ export const EventServices = {
                 [Op.or]: [
                     {
                         [EventSchema.firstName]: {
+                            [Op.or]: [
+                                {
+                                    [Op.iLike]: `${searchText}%`,
+                                },
+                                {
+                                    [Op.iLike]: `%${searchText}%`,
+                                },
+                            ],
+                        },
+                    },
+                    {
+                        [EventSchema.lastName]: {
                             [Op.or]: [
                                 {
                                     [Op.iLike]: `${searchText}%`,
@@ -188,5 +186,80 @@ export const EventServices = {
         res.map((data) => output.push(data.toJSON()))
 
         return output
+    },
+
+    async addEvent(event: AddEvent): Promise<AddEvent | QueryResponse> {
+        const { firstName, lastName, eventType, eventDate } = event
+        if (firstName && lastName && eventType && eventDate) {
+            const res = await Event.create({
+                firstName,
+                lastName,
+                eventType,
+                eventDate,
+            })
+            return res.toJSON()
+        } else {
+            return {
+                code: 400,
+                message: 'A required field is missing',
+            } as QueryResponse
+        }
+    },
+
+    async deleteEvent(props: {
+        eventId: number
+    }): Promise<void | QueryResponse> {
+        const { eventId } = props
+        if (eventId) {
+            const res = await Event.destroy({
+                where: {
+                    eventId: eventId,
+                },
+            })
+
+            if (res >= 0) {
+                return {
+                    code: 200,
+                    message:
+                        res === 0
+                            ? `EventId ${eventId} was not found. ${res} row(s) were`
+                            : `Successfully deleted ${res} row(s)`,
+                } as QueryResponse
+            }
+        } else {
+            return {
+                code: 400,
+                message: 'A required field is missing',
+            } as QueryResponse
+        }
+    },
+
+    async editEvent(props: Events): Promise<void | QueryResponse> {
+        const { eventId, firstName, lastName, eventType, eventDate } = props
+        if (
+            eventId !== undefined &&
+            firstName !== undefined &&
+            lastName !== undefined &&
+            eventType !== undefined &&
+            eventDate !== undefined
+        ) {
+            const res = await Event.update(
+                { eventId, ...props },
+                {
+                    where: {
+                        eventId: eventId,
+                    },
+                },
+            )
+            return {
+                code: 200,
+                message: `${res} record was successfully updated`,
+            } as QueryResponse
+        } else {
+            return {
+                code: 400,
+                message: 'A required field is missing',
+            } as QueryResponse
+        }
     },
 }
