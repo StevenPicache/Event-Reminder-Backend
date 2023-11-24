@@ -2,13 +2,6 @@ import { Event } from '../models/events'
 import { fn, col, Op } from 'sequelize'
 import moment from 'moment'
 
-// export type Events = {
-//     id: number
-//     name: string
-//     eventType: string
-//     eventDate: Date
-// }
-
 export type AddEvent = {
     firstName: string
     lastName: string
@@ -45,146 +38,162 @@ type Events = {
     eventDate: Date
 }
 
-export const EventServices = {
-    async getEvents(): Promise<Events[]> {
-        let output: Events[] = []
-        const dateFormat: string = 'YYYY-MM-DD'
-        const startDate = new Date(moment().format(dateFormat))
-        const endYear = new Date(moment().endOf('year').format(dateFormat))
+async function queryEvents(props?: { weekRange: number | undefined }) {
+    let endDate
+    let output: Events[] = []
+    const dateFormat: string = 'YYYY-MM-DD'
 
-        const res = await Event.findAll({
-            attributes: [
-                EventSchema.eventId,
-                EventSchema.firstName,
-                EventSchema.lastName,
-                EventSchema.eventType,
-                EventSchema.eventDate,
-            ],
-
-            where: {
-                [EventSchema.eventDate]: {
-                    [Op.between]: [startDate, endYear],
-                },
-            },
-            order: [[EventSchema.eventDate, 'ASC']],
-        })
-
-        res.map((data) => output.push(data.toJSON()))
-        return output
-    },
-
-    async getEventsWeekRange(
-        props: WeekRange,
-    ): Promise<Events[] | QueryResponse> {
-        const { range } = props
-        const defaultRange = 2
-        const output: Events[] = []
-        const dateFormat: string = 'YYYY-MM-DD'
-        const startDate = new Date(moment().format(dateFormat))
-        const endDate = new Date(
+    if (props === undefined) {
+        endDate = new Date(moment().endOf('year').format(dateFormat))
+    } else {
+        const { weekRange } = props
+        endDate = new Date(
             moment()
-                .add(range ?? defaultRange, 'week')
+                .add(weekRange ?? 2, 'week')
                 .format(dateFormat),
         )
+    }
 
-        if (range !== null) {
-            const res = await Event.findAll({
-                attributes: [
-                    EventSchema.eventId,
-                    EventSchema.firstName,
-                    EventSchema.lastName,
-                    EventSchema.eventType,
-                    EventSchema.eventDate,
-                ],
+    const startDate = new Date(moment().format(dateFormat))
 
-                where: {
-                    [EventSchema.eventDate]: {
-                        [Op.between]: [startDate, endDate],
-                    },
-                },
-                order: [[EventSchema.eventDate, 'ASC']],
-            })
-            res.map((data) => output.push(data.toJSON()))
-        } else {
-            return {
-                code: 400,
-                message: 'A required field is missing',
-            } as QueryResponse
-        }
-        return output
-    },
+    const res = await Event.findAll({
+        attributes: [
+            EventSchema.eventId,
+            EventSchema.firstName,
+            EventSchema.lastName,
+            EventSchema.eventType,
+            EventSchema.eventDate,
+        ],
 
-    async searchEvents(props: SearchText): Promise<Events[]> {
-        const { searchText } = props
-        const output: Events[] = []
-        if (searchText.length === 0) return output
-        /// Finds all records that matches with `searchText`. Name or event
-        const res = await Event.findAll({
-            attributes: [
-                EventSchema.eventId,
+        where: {
+            [EventSchema.eventDate]: {
+                [Op.between]: [startDate, endDate],
+            },
+        },
+        order: [[EventSchema.eventDate, 'ASC']],
+    })
+
+    res.map((data) => output.push(data.toJSON()))
+    return output
+}
+
+async function queryMatchedSearchEvents(props: { search: string }) {
+    const { search } = props
+    const output: Events[] = []
+    if (search.length === 0) return output
+    /// Finds all records that matches with `searchText`. Name or event
+    const res = await Event.findAll({
+        attributes: [
+            EventSchema.eventId,
+            EventSchema.firstName,
+            EventSchema.lastName,
+            EventSchema.eventType,
+            EventSchema.eventDate,
+        ],
+
+        where: {
+            [Op.or]: [
                 EventSchema.firstName,
                 EventSchema.lastName,
                 EventSchema.eventType,
-                EventSchema.eventDate,
-            ],
+            ].reduce((value, field) => {
+                value[EventSchema[field]] = {
+                    [Op.or]: [
+                        { [Op.iLike]: `${search}%` },
+                        { [Op.iLike]: `%${search}%` },
+                    ],
+                }
+                return value
+            }, {} as Record<string, any>),
+        },
+        order: [[EventSchema.eventDate, 'ASC']],
+    })
 
-            where: {
-                [Op.or]: [
-                    {
-                        [EventSchema.firstName]: {
-                            [Op.or]: [
-                                {
-                                    [Op.iLike]: `${searchText}%`,
-                                },
-                                {
-                                    [Op.iLike]: `%${searchText}%`,
-                                },
-                            ],
-                        },
-                    },
-                    {
-                        [EventSchema.lastName]: {
-                            [Op.or]: [
-                                {
-                                    [Op.iLike]: `${searchText}%`,
-                                },
-                                {
-                                    [Op.iLike]: `%${searchText}%`,
-                                },
-                            ],
-                        },
-                    },
-                    {
-                        [EventSchema.lastName]: {
-                            [Op.or]: [
-                                {
-                                    [Op.iLike]: `${searchText}%`,
-                                },
-                                {
-                                    [Op.iLike]: `%${searchText}%`,
-                                },
-                            ],
-                        },
-                    },
-                    {
-                        [EventSchema.eventType]: {
-                            [Op.or]: [
-                                {
-                                    [Op.iLike]: `${searchText}%`,
-                                },
-                                {
-                                    [Op.iLike]: `%${searchText}%`,
-                                },
-                            ],
-                        },
-                    },
-                ],
+    res.map((data) => output.push(data.toJSON()))
+
+    return output
+}
+
+async function queryMatchedSearchAndWeekEvents(props: {
+    search: string
+    weekRange: number
+}) {
+    const { search, weekRange } = props
+    const output: Events[] = []
+    let endDate
+
+    const dateFormat: string = 'YYYY-MM-DD'
+
+    const startDate = new Date(moment().format(dateFormat))
+    let endOfYear = new Date(moment().endOf('year').format(dateFormat))
+
+    endDate = new Date(
+        moment()
+            .add(weekRange ?? endOfYear, 'week')
+            .format(dateFormat),
+    )
+    if (search.length === 0) return output
+    const res = await Event.findAll({
+        attributes: [
+            EventSchema.eventId,
+            EventSchema.firstName,
+            EventSchema.lastName,
+            EventSchema.eventType,
+            EventSchema.eventDate,
+        ],
+        where: {
+            [EventSchema.eventDate]: {
+                [Op.between]: [startDate, endDate],
             },
-            order: [[EventSchema.eventDate, 'ASC']],
-        })
+            [Op.or]: [
+                EventSchema.firstName,
+                EventSchema.lastName,
+                EventSchema.eventType,
+            ].reduce((value, field) => {
+                value[EventSchema[field]] = {
+                    [Op.or]: [
+                        { [Op.iLike]: `${search}%` },
+                        { [Op.iLike]: `%${search}%` },
+                    ],
+                }
+                return value
+            }, {} as Record<string, any>),
+        },
+        order: [[EventSchema.eventDate, 'ASC']],
+    })
+    res.map((data) => output.push(data.toJSON()))
+    return output
+}
 
-        res.map((data) => output.push(data.toJSON()))
+export const EventServices = {
+    async getEvents(props: {
+        search?: string
+        range?: string
+    }): Promise<Events[]> {
+        let output: Events[] = []
 
+        const { search, range } = props
+
+        if (search && range) {
+            let weekRange = parseInt(range)
+            output = await queryMatchedSearchAndWeekEvents({
+                search,
+                weekRange,
+            })
+        } else if (
+            search !== undefined &&
+            search.length !== 0 &&
+            range?.length === 0
+        ) {
+            output = await queryMatchedSearchEvents({ search })
+        } else {
+            if (range) {
+                let weekRange = parseInt(range)
+                output = await queryEvents({ weekRange })
+            } else {
+                output = await queryEvents()
+            }
+        }
         return output
     },
 
