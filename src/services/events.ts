@@ -1,21 +1,6 @@
 import { Event } from '../models/events'
-import { fn, col, Op } from 'sequelize'
+import { Op } from 'sequelize'
 import moment from 'moment'
-
-export type AddEvent = {
-    firstName: string
-    lastName: string
-    eventType: string
-    eventDate: Date
-}
-
-export type SearchText = {
-    searchText: string
-}
-
-export type WeekRange = {
-    range: number
-}
 
 enum EventSchema {
     eventId = 'eventId',
@@ -25,17 +10,17 @@ enum EventSchema {
     eventDate = 'eventDate',
 }
 
-type QueryResponse = {
-    code: number
-    message: string
-}
-
 type Events = {
     eventId?: number
     firstName: string
     lastName: string
     eventType: string
     eventDate: Date
+}
+
+type QueryResponse = {
+    code: number
+    message: string
 }
 
 async function queryEvents(props?: { weekRange: number | undefined }) {
@@ -197,7 +182,7 @@ export const EventServices = {
         return output
     },
 
-    async addEvent(event: AddEvent): Promise<AddEvent | QueryResponse> {
+    async addEvent(event: Events): Promise<Events | QueryResponse> {
         const { firstName, lastName, eventType, eventDate } = event
         if (firstName && lastName && eventType && eventDate) {
             const res = await Event.create({

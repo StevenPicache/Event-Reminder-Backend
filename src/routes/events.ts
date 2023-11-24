@@ -1,5 +1,5 @@
-import express, { Express, Request, Response, Router } from 'express'
-import { EventServices, SearchText } from '../services/events'
+import express, { Request, Response } from 'express'
+import { EventServices } from '../services/events'
 
 const router = express.Router()
 
@@ -38,9 +38,7 @@ const deleteEvent = async (req: Request, res: Response) => {
 
 const editEvent = async (req: Request, res: Response) => {
     try {
-        const eventId = parseInt(req.params.id)
         const paramBody = req.body
-        console.log(paramBody)
         const result = await EventServices.editEvent(paramBody)
         res.status(200).send(result)
     } catch (e: any) {
